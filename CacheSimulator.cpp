@@ -3,9 +3,10 @@
 
 using namespace std;
 
-void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr ); 
-void replaceBlock(int index, int associativity, int tag, int* cache_array, int* lru_count);
-void writeBack(int index, int associativity, int tag, int* cache_array, int* lru_count, int* dityBit_array, int* hitCountPtr, int* missCountPtr);
+void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty ); 
+void replaceBlock(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr);
+void writeBack(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* dityBit_array, int* hitCountPtr, int* missCountPtr, int memoryPenalty);
+void performance(int* hitCountPtr, int* missCountPtr, int* clockCounterPtr);
 
 int main(){
 
@@ -13,13 +14,17 @@ int main(){
         int associativity = 0;
         int blockSize{0};
         int address{0};
+        int memoryPenalty;
 
         int blockIndex;
         int* blockPtr = &blockIndex;
 
-        int miss_count, hit_count;
+        int miss_count =0, hit_count=0;
         int* missCountPtr = &miss_count;
         int* hitCountPtr = &hit_count;
+
+        int clockCounter =0;
+        int* clockCounterPtr = &clockCounter;
 
         cout << "Set Configurations" << endl;
         cout << "Cache Size in kiB: ";
@@ -33,6 +38,9 @@ int main(){
 
         cout << "Address: " ;
         cin >> address;
+
+        cout << "Memory Penalty: " ;
+        cin >> memoryPenalty;
 
 
         int numberOfBlocks = (cacheSize*1024)/blockSize;
@@ -71,9 +79,11 @@ int main(){
     return 0;
 }
 
-void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr){
+void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty){
+
     int array_index = index * associativity;
     string operation = "";
+    
 
     for(int i = 0; i < associativity; i++){
 
@@ -81,15 +91,19 @@ void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_
             operation = "Hit";
             lru_count[array_index + i] = 0;
             *blockPtr = array_index + i;
+            *hitCountPtr += 1;
+            *clockCounterPtr += 1;
             break;              
         }
 
         lru_count[array_index + i] = lru_count[array_index + i] + 1;
         operation = "Miss";
+        *missCountPtr += 1;
+        *clockCounterPtr += memoryPenalty;
 
     }
 
-    cout << operation << endl;
+      cout << operation << endl;
 
      if(operation == "Miss"){
         replaceBlock(array_index, associativity, tag, cache_array, lru_count, blockPtr);
@@ -123,12 +137,34 @@ void replaceBlock(int index, int associativity, int tag, int* cache_array, int* 
 
 }
 
-void writeBack(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* dityBit_array, int* hitCountPtr, int* missCountPtr){
+void writeBack(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* dityBit_array, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty){
 
-    checkHit(index, associativity, tag, cache_array, lru_count, blockPtr, hitCountPtr, missCountPtr);
+    checkHit(index, associativity, tag, cache_array, lru_count, blockPtr, hitCountPtr, missCountPtr, clockCounterPtr, memoryPenalty); //for write allocate
 
     dityBit_array[*blockPtr] = 1;
 
     
+}
+
+void performance(int* hitCountPtr, int* missCountPtr, int* clockCounterPtr){
+
+    int totalNumberOfAccess = *hitCountPtr + *missCountPtr;
+
+    int averageAccessTime = *clockCounterPtr / totalNumberOfAccess;
+
+    int missRate = (*missCountPtr / totalNumberOfAccess);
+    int hitRate = 1 - missRate;
+
+    cout<< "Total number of miss: " <<  *missCountPtr <<endl;
+    cout<< "Miss rate: " <<  missRate <<endl;
+
+    cout<< "Total number of hits: " <<  *hitCountPtr <<endl;
+    cout<< "Hit rate: " << hitRate<< endl;
+
+    cout<< "Total number of acesses: " <<  totalNumberOfAccess <<endl;
+
+    cout<< "Average Access Time: " << averageAccessTime << endl;
+
+
 }
 

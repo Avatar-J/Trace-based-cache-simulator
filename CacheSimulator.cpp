@@ -3,9 +3,10 @@
 
 using namespace std;
 
-void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty ); 
+string checkHit(int index, int associativity, int tag, int array_index, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty, int cacheAccessTime ); 
 void replaceBlock(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr);
-void writeBack(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* dityBit_array, int* hitCountPtr, int* missCountPtr, int memoryPenalty);
+void write(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* dityBit_array, int* hitCountPtr, int* missCountPtr, int memoryPenalty, int cacheAccessTime, string writeback, int* writeMiss, int* writeHit);
+void read(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty, int cacheAccessTime, int* readMiss, int* readHit );
 void performance(int* hitCountPtr, int* missCountPtr, int* clockCounterPtr);
 
 int main(){
@@ -15,10 +16,14 @@ int main(){
         int blockSize{0};
         int address{0};
         int memoryPenalty;
+        int cacheAccessTime;
+        string writeback;
 
         int blockIndex;
         int* blockPtr = &blockIndex;
 
+        int readMiss = 0, readHit=0, writeMiss=0, writeHit=0;
+       
         int miss_count =0, hit_count=0;
         int* missCountPtr = &miss_count;
         int* hitCountPtr = &hit_count;
@@ -39,8 +44,16 @@ int main(){
         cout << "Address: " ;
         cin >> address;
 
-        cout << "Memory Penalty: " ;
+        cout << "Memory Penalty in clocks: " ;
         cin >> memoryPenalty;
+
+        cout << "Cache Acess Time in clocks: " ;
+        cin >> cacheAccessTime;
+
+        cout << "Write back [yes/no]: " ;
+        cin >> writeback;
+
+        
 
 
         int numberOfBlocks = (cacheSize*1024)/blockSize;
@@ -79,9 +92,9 @@ int main(){
     return 0;
 }
 
-void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty){
+string checkHit(int index, int associativity, int tag, int array_index, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty, int cacheAccessTime){
 
-    int array_index = index * associativity;
+    
     string operation = "";
     
 
@@ -92,7 +105,7 @@ void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_
             lru_count[array_index + i] = 0;
             *blockPtr = array_index + i;
             *hitCountPtr += 1;
-            *clockCounterPtr += 1;
+            *clockCounterPtr += cacheAccessTime;
             break;              
         }
 
@@ -105,10 +118,9 @@ void checkHit(int index, int associativity, int tag, int* cache_array, int* lru_
 
       cout << operation << endl;
 
-     if(operation == "Miss"){
-        replaceBlock(array_index, associativity, tag, cache_array, lru_count, blockPtr);
+      return operation;
 
-     }
+    
 
 }
 
@@ -130,21 +142,51 @@ void replaceBlock(int index, int associativity, int tag, int* cache_array, int* 
         }
 
         if(i == (associativity - 1)){
-            cache_array[maxIndex] == tag;
+            cache_array[maxIndex] = tag;
             *blockPtr = maxIndex;
         }
     }  
 
 }
 
-void writeBack(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* dityBit_array, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty){
+void read(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty, int cacheAccessTime, int* readMiss, int* readHit ){
 
-    checkHit(index, associativity, tag, cache_array, lru_count, blockPtr, hitCountPtr, missCountPtr, clockCounterPtr, memoryPenalty); //for write allocate
+   int array_index = index * associativity;
 
-    dityBit_array[*blockPtr] = 1;
+   string operation = checkHit(index, associativity, tag, array_index, cache_array, lru_count, blockPtr, hitCountPtr, missCountPtr, clockCounterPtr, memoryPenalty, cacheAccessTime);
 
-    
+     if(operation == "Miss"){
+        replaceBlock(array_index, associativity, tag, cache_array, lru_count, blockPtr);
+        *readMiss += 1;
+     }
+     else{
+        *readHit += 1;
+     }
 }
+
+
+void write(int index, int associativity, int tag, int* cache_array, int* lru_count, int* blockPtr, int* dityBit_array, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int memoryPenalty, int cacheAccessTime, string writeback, int* writeMiss, int* writeHit){
+
+    int array_index = index * associativity;
+
+    string operation = checkHit(index, associativity, tag, array_index, cache_array, lru_count, blockPtr, hitCountPtr, missCountPtr, clockCounterPtr, memoryPenalty, cacheAccessTime); 
+
+
+    if(writeback == "yes"){
+        if(operation == "Miss"){
+        replaceBlock(array_index, associativity, tag, cache_array, lru_count, blockPtr); //for write allocate
+            *writeMiss += 1;
+        }
+        else{
+            *writeHit += 1;
+        }
+       dityBit_array[*blockPtr] = 1;
+    }
+
+   
+ 
+}
+
 
 void performance(int* hitCountPtr, int* missCountPtr, int* clockCounterPtr){
 

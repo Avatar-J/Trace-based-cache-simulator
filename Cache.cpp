@@ -1,27 +1,14 @@
 #include <iostream>
+#include "Cache.hpp"
 
 using namespace std;
 
-class Cache{
-    private:
-        int cacheSize =0;
-        int associativity = 0;
-        int blockSize =0;
-        //int address = 0;
-        int memoryPenalty;
-        int cacheAccessTime;
-        string writePolicy;
-        string writeAllocate;
-        int numberOfBlocks;
-        int numberOfSets;
 
-        int* cache_array ;
-        int* lru_count; 
-        int* dityBit_array;
 
-    public:
 
-        Cache(int cache_Size, int associativity, int block_Size, string write_policy, string write_allocate){
+   
+
+        Cache::Cache(int cache_Size, int associativity, int block_Size, string write_policy, string write_allocate){
 
             cacheSize = cache_Size;
             associativity = associativity;
@@ -43,7 +30,7 @@ class Cache{
 
         }
 
-        ~Cache(){
+       Cache::~Cache(){
             delete[] cache_array;  //free allocated space
             cache_array = NULL;
 
@@ -55,7 +42,7 @@ class Cache{
         }
 
 
-        void calc_index_of_set_and_tag_value(int address, int* indexOfSets, int* tagValue){
+        void Cache::calc_index_of_set_and_tag_value(int address, int* indexOfSets, int* tagValue){
 
             *indexOfSets = address % numberOfSets;
 
@@ -64,7 +51,7 @@ class Cache{
         }
 
 
-        string checkHit(int array_index, int tag, int* blockIndex, int* hitCounter, int* clockCounter, int* missCounter){
+        string Cache::checkHit(int array_index, int tag, int* blockIndex, int* hitCounter, int* clockCounter, int* missCounter){
 
             string hit_or_miss;
 
@@ -90,7 +77,7 @@ class Cache{
         }
 
 
-        void replaceBlock(int array_index, int tag, int* blockIndex){
+        void Cache::replaceBlock(int array_index, int tag, int* blockIndex){
                 int max = lru_count[array_index];
                 int maxIndex = array_index;
 
@@ -116,7 +103,7 @@ class Cache{
         }
 
 
-        void read(int index, int tag, int* blockIndex, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int* readMiss, int* readHit ){
+        void Cache::read(int index, int tag, int* blockIndex, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int* readMiss, int* readHit ){
 
                 int array_index = index * associativity;
 
@@ -132,7 +119,7 @@ class Cache{
             }
             
 
-        void write(int index, int tag, int* blockIndex, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr,  int* writeMiss, int* writeHit){
+        void Cache::write(int index, int tag, int* blockIndex, int* hitCountPtr, int* missCountPtr, int* clockCounterPtr,  int* writeMiss, int* writeHit){
 
                 int array_index = index * associativity;
 
@@ -148,12 +135,20 @@ class Cache{
                         *writeHit += 1;
                     }
                     dityBit_array[*blockIndex] = 1;
-                }      
+                }  
+                else{
+                    if(operation == "Miss"){
+                        *writeMiss += 1;
+                    }
+                    else{
+                        *writeHit += 1;
+                    }
+                }    
             
             }
 
 
-            void performance(int* hitCountPtr, int* missCountPtr, int* clockCounterPtr){
+            void Cache::performance(int* hitCountPtr, int* missCountPtr, int* clockCounterPtr, int* writeMiss, int* writeHit, int* readMiss, int* readHit){
 
                     int totalNumberOfAccess = *hitCountPtr + *missCountPtr;
 
@@ -164,18 +159,19 @@ class Cache{
 
                     cout<< "Total number of miss: " <<  *missCountPtr <<endl;
                     cout<< "Miss rate: " <<  missRate <<endl;
+                    cout<< "Total write miss: " <<  *writeMiss <<endl;
+                    cout<< "Total read miss: " <<  *readMiss <<endl;
 
                     cout<< "Total number of hits: " <<  *hitCountPtr <<endl;
                     cout<< "Hit rate: " << hitRate<< endl;
+                    cout<< "Total write hit: " <<  *writeHit <<endl;
+                    cout<< "Total read hit: " <<  *readHit <<endl;
 
                     cout<< "Total number of acesses: " <<  totalNumberOfAccess <<endl;
 
                     cout<< "Average Access Time: " << averageAccessTime << endl;
 
 
-}
+            }
 
        
-
-
-};

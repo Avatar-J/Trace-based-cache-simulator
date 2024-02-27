@@ -1,4 +1,7 @@
 #include <iostream>
+#include <string>
+
+#include"Cache.hpp"
 
 
 using namespace std;
